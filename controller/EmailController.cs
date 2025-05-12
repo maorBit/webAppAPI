@@ -4,6 +4,8 @@ using System.Linq;
 using System.Net;
 using System.Net.Mail;
 using System.Text;
+using System.IO;
+using System.Net.Mime;
 
 namespace EmailWebApp.Controllers
 {
@@ -28,6 +30,10 @@ namespace EmailWebApp.Controllers
                     ? $"ברכה מאת {request.PlayerName}"
                     : $"Greeting from {request.PlayerName}";
 
+                // Decode base64 image to byte[]
+                byte[] imageBytes = Convert.FromBase64String(request.ImageBase64);
+
+                // Create HTML body with CID reference to the image
                 string htmlBody = $@"
                     <div style='font-family: Arial, sans-serif; font-size: 16px; color: #333; direction: {(isHebrew ? "rtl" : "ltr")}; text-align: {(isHebrew ? "right" : "left")};'>
                         <h2 style='color: #0077cc;'>{(isHebrew ? "🎉 קיבלתם ברכה ממשחק האירוע!" : "🎉 You received a greeting from the invitation game!")}</h2>
@@ -35,7 +41,7 @@ namespace EmailWebApp.Controllers
                         <p><strong>🕒 {(isHebrew ? "תוצאה" : "Score")}:</strong> {request.Score}</p>
                         <p><strong>📨 {(isHebrew ? "הודעה" : "Message")}:</strong><br>{request.Message}</p>
                         <p><strong>📸 {(isHebrew ? "תמונה" : "Image")}:</strong></p>
-                        <img src=""data:image/png;base64,{request.ImageBase64}"" style='max-width:100%; border-radius:8px;' />
+                        <img src='cid:selfieImage' style='max-width:100%; border-radius:8px;' />
                     </div>";
 
                 MailMessage mail = new MailMessage
@@ -44,11 +50,23 @@ namespace EmailWebApp.Controllers
                     Subject = subject,
                     SubjectEncoding = Encoding.UTF8,
                     BodyEncoding = Encoding.UTF8,
-                    IsBodyHtml = true,
-                    Body = htmlBody
+                    IsBodyHtml = true
                 };
 
                 mail.To.Add(request.RecipientEmail);
+
+                // Add image attachment with CID
+                MemoryStream imageStream = new MemoryStream(imageBytes);
+                Attachment inlineImage = new Attachment(imageStream, "selfie.png", "image/png");
+                inlineImage.ContentId = "selfieImage";
+                inlineImage.ContentDisposition.Inline = true;
+                inlineImage.ContentDisposition.DispositionType = DispositionTypeNames.Inline;
+                mail.Attachments.Add(inlineImage);
+
+                // AlternateView with HTML and linked resources
+                AlternateView htmlView = AlternateView.CreateAlternateViewFromString(htmlBody, Encoding.UTF8, "text/html");
+                htmlView.LinkedResources.Add(new LinkedResource(imageStream, "image/png") { ContentId = "selfieImage" });
+                mail.AlternateViews.Add(htmlView);
 
                 using (SmtpClient smtpClient = new SmtpClient("smtp.gmail.com", 587))
                 {
