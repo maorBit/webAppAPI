@@ -24,7 +24,7 @@ namespace EmailWebApp.Controllers
 
             try
             {
-                bool isHebrew = IsHebrew(request.Message);כ
+                bool isHebrew = IsHebrew(request.Message);
 
                 string subject = isHebrew
                     ? $"ברכה מאת {request.PlayerName}"
