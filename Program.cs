@@ -1,18 +1,23 @@
-﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+﻿var builder = WebApplication.CreateBuilder(args);
 
-var builder = WebApplication.CreateBuilder(args);
+// 🔐 Add CORS
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins("https://maorbit.github.io")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
-// Enable controller support
 builder.Services.AddControllers();
-
 var app = builder.Build();
 
-app.UseHttpsRedirection(); // optional on Render
-app.UseRouting();
+// 🛡 Use CORS before routing
+app.UseCors();
+
+app.UseHttpsRedirection();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
