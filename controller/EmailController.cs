@@ -1,8 +1,9 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using System;
 using System.IO;
 using System.Net;
 using System.Net.Mail;
+using System.Net.Mime;
 using System.Text;
 
 namespace EmailWebApp.Controllers
@@ -22,31 +23,41 @@ namespace EmailWebApp.Controllers
 
             try
             {
-                // Save base64 image to a temporary file (optional - for debugging only)
                 byte[] imageBytes = Convert.FromBase64String(request.ImageBase64);
                 string tempFilePath = Path.Combine(Path.GetTempPath(), $"selfie_{Guid.NewGuid()}.png");
                 System.IO.File.WriteAllBytes(tempFilePath, imageBytes);
 
-                // Compose the email
                 MailMessage mail = new MailMessage
                 {
                     From = new MailAddress("jubilo.gamestudio@gmail.com", "Jubilo - Game Studio", Encoding.UTF8),
-                    Subject = $"???? ??? {request.PlayerName}",
+                    Subject = $"ברכה מאת {request.PlayerName}",
                     SubjectEncoding = Encoding.UTF8,
-                    BodyEncoding = Encoding.UTF8,
                     IsBodyHtml = true,
-                    Body = $@"
-                    <div style='font-family: Arial, sans-serif; font-size: 16px; color: #333; direction: rtl;'>
-                        <h2 style='color: #0077cc;'>????? ???? ????? ??????</h2>
-                        <p><strong>?? ??:</strong> {request.PlayerName}</p>
-                        <p><strong>?? ?????:</strong> {request.Score}</p>
-                        <p><strong>?? ?????:</strong><br>{request.Message}</p>
-                        <p><strong>?? ?????:</strong></p>
-                        <img src='data:image/png;base64,{request.ImageBase64}' style='max-width:100%; border-radius:8px;' />
-                    </div>"
+                    BodyEncoding = Encoding.UTF8
+                };
+                mail.To.Add(request.RecipientEmail);
+
+                LinkedResource inlineImage = new LinkedResource(tempFilePath, MediaTypeNames.Image.Jpeg)
+                {
+                    ContentId = "SelfieImage",
+                    TransferEncoding = TransferEncoding.Base64
                 };
 
-                mail.To.Add(request.RecipientEmail);
+                string htmlBody = $@"
+                <html dir='rtl'>
+                <head><meta charset='UTF-8'></head>
+                <body style='font-family: Arial, sans-serif;'>
+                    <h2 style='color:#4A90E2;'>🎉 קיבלתם ברכה ממשחק האירוע!</h2>
+                    <p><strong>מאת:</strong> {WebUtility.HtmlEncode(request.PlayerName)}</p>
+                    <p><strong>הודעה:</strong> {WebUtility.HtmlEncode(request.Message)}</p>
+                    <p><strong>תוצאה:</strong> {request.Score}</p>
+                    <img src='cid:SelfieImage' alt='Selfie' style='margin-top:20px;max-width:100%;height:auto;border-radius:8px;' />
+                </body>
+                </html>";
+
+                AlternateView htmlView = AlternateView.CreateAlternateViewFromString(htmlBody, Encoding.UTF8, MediaTypeNames.Text.Html);
+                htmlView.LinkedResources.Add(inlineImage);
+                mail.AlternateViews.Add(htmlView);
 
                 using (SmtpClient smtpClient = new SmtpClient("smtp.gmail.com", 587))
                 {
