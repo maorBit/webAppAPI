@@ -1,22 +1,13 @@
-# Use .NET 8 runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-WORKDIR /app
-EXPOSE 80
-
 # Build stage
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY ["EmailWebApp.csproj", "."]
-RUN dotnet restore "EmailWebApp.csproj"
 COPY . .
-RUN dotnet build "EmailWebApp.csproj" -c Release -o /app/build
+RUN dotnet restore
+RUN dotnet publish -c Release -o /app
 
-# Publish stage
-FROM build AS publish
-RUN dotnet publish "EmailWebApp.csproj" -c Release -o /app/publish
-
-# Final stage
-FROM base AS final
+# Runtime stage
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --from=build /app .
+EXPOSE 8080
 ENTRYPOINT ["dotnet", "EmailWebApp.dll"]

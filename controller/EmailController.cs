@@ -3,7 +3,6 @@ using System;
 using System.IO;
 using System.Net;
 using System.Net.Mail;
-using System.Threading.Tasks;
 
 namespace EmailWebApp.Controllers
 {
@@ -12,7 +11,7 @@ namespace EmailWebApp.Controllers
     public class EmailController : ControllerBase
     {
         [HttpPost("send-email")]
-        public async Task<IActionResult> SendEmail([FromBody] EmailRequest request)
+        public IActionResult SendEmail([FromBody] EmailRequest request)
         {
             if (request == null || string.IsNullOrEmpty(request.Message) ||
                 string.IsNullOrEmpty(request.ImageBase64) || string.IsNullOrEmpty(request.RecipientEmail))
@@ -22,53 +21,28 @@ namespace EmailWebApp.Controllers
 
             try
             {
-                // Decode the base64 image
                 byte[] imageBytes = Convert.FromBase64String(request.ImageBase64);
+                string tempFilePath = Path.Combine(Path.GetTempPath(), $"selfie_{Guid.NewGuid()}.png");
+                System.IO.File.WriteAllBytes(tempFilePath, imageBytes);
 
-                // Save image temporarily
-                string tempFilePath = Path.Combine(Path.GetTempPath(), "selfie.png");
-                await System.IO.File.WriteAllBytesAsync(tempFilePath, imageBytes);
-
-                // Read into memory to avoid locking the file
-                Attachment imageAttachment;
-                using (FileStream fs = new FileStream(tempFilePath, FileMode.Open, FileAccess.Read))
-                {
-                    MemoryStream ms = new MemoryStream();
-                    await fs.CopyToAsync(ms);
-                    ms.Position = 0;
-                    imageAttachment = new Attachment(ms, "selfie.png", "image/png");
-                }
-
-                // Delete the temp file after copying
-                System.IO.File.Delete(tempFilePath);
-
-                // Prepare the email
                 MailMessage mail = new MailMessage
                 {
                     From = new MailAddress("jubilo.gamestudio@gmail.com", "Jubilo - Game Studio"),
-                    Subject = $"Greetings from {request.PlayerName}!",
-                    Body = $"{request.Message}\n\nScore: {request.Score}",
+                    Subject = $"???? ??? {request.PlayerName}",
+                    Body = $"{request.Message}\n\n?????: {request.Score}",
                     IsBodyHtml = false
                 };
                 mail.To.Add(request.RecipientEmail);
-                mail.Attachments.Add(imageAttachment);
+                mail.Attachments.Add(new Attachment(tempFilePath));
 
-                // Send the email
                 using (SmtpClient smtpClient = new SmtpClient("smtp.gmail.com", 587))
                 {
-                    string? emailUser = Environment.GetEnvironmentVariable("EMAIL_USER");
-                    string? emailPass = Environment.GetEnvironmentVariable("EMAIL_PASS");
-
-                    if (string.IsNullOrEmpty(emailUser) || string.IsNullOrEmpty(emailPass))
-                    {
-                        return StatusCode(500, "Email credentials are not configured properly.");
-                    }
-
-                    smtpClient.Credentials = new NetworkCredential(emailUser, emailPass);
+                    smtpClient.Credentials = new NetworkCredential("jubilo.gamestudio@gmail.com", "luyq azow wets wcdk");
                     smtpClient.EnableSsl = true;
                     smtpClient.Send(mail);
                 }
 
+                System.IO.File.Delete(tempFilePath);
                 return Ok("Email sent successfully.");
             }
             catch (Exception ex)
@@ -80,10 +54,10 @@ namespace EmailWebApp.Controllers
 
     public class EmailRequest
     {
-        public string Message { get; set; } = string.Empty;
-        public string PlayerName { get; set; } = string.Empty;
-        public string Score { get; set; } = string.Empty;
-        public string ImageBase64 { get; set; } = string.Empty;
-        public string RecipientEmail { get; set; } = string.Empty;
+        public string Message { get; set; } = "";
+        public string PlayerName { get; set; } = "";
+        public string Score { get; set; } = "";
+        public string ImageBase64 { get; set; } = "";
+        public string RecipientEmail { get; set; } = "";
     }
 }

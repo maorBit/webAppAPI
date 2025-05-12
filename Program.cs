@@ -1,27 +1,18 @@
-﻿var builder = WebApplication.CreateBuilder(args);
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
-// Add services to the container.
-builder.Services.AddRazorPages();
-builder.Services.AddControllers(); // ✅ Enable API controllers
+var builder = WebApplication.CreateBuilder(args);
+
+// Enable controller support
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Error");
-    app.UseHsts();
-}
-
-app.UseHttpsRedirection();
-app.UseStaticFiles();
-
+app.UseHttpsRedirection(); // optional on Render
 app.UseRouting();
-
 app.UseAuthorization();
 
-// ✅ Map Razor Pages and Controllers
-app.MapRazorPages();
-app.MapControllers(); // ✅ Enable /api/* routes
+app.MapControllers();
 
 app.Run();
