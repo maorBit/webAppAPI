@@ -14,50 +14,33 @@ namespace EmailWebApp.Controllers
         [HttpPost("send-email")]
         public IActionResult SendEmail([FromBody] EmailRequest request)
         {
-            if (request == null
-                || string.IsNullOrWhiteSpace(request.Message)
-                || string.IsNullOrWhiteSpace(request.ImageBase64)
-                || string.IsNullOrWhiteSpace(request.RecipientEmail))
+            if (request == null || string.IsNullOrWhiteSpace(request.Message) ||
+                string.IsNullOrWhiteSpace(request.ImageBase64) || string.IsNullOrWhiteSpace(request.RecipientEmail))
             {
                 return BadRequest("Invalid request data.");
             }
 
             try
             {
-                // נשתמש ישירות בבסיס64 להתרשמות בתמונה
-                bool messageIsHebrew = IsHebrew(request.Message);
-                bool nameIsHebrew = IsHebrew(request.PlayerName);
+                bool isHebrew = IsHebrew(request.Message);
 
-                string subject = nameIsHebrew
+                string subject = isHebrew
                     ? $"ברכה מאת {request.PlayerName}"
                     : $"Greeting from {request.PlayerName}";
 
-                // בונים HTML מלא עם Charset ו־dir
                 string htmlBody = $@"
-<html>
-  <head>
-    <meta http-equiv=""Content-Type"" content=""text/html; charset=utf-8"" />
-  </head>
-  <body style=""margin:0;padding:0;font-family:Arial,sans-serif;font-size:16px;color:#333;direction:{(messageIsHebrew ? "rtl" : "ltr")};text-align:{(messageIsHebrew ? "right" : "left")};"">
-    <h2 style=""color:#0077cc;margin-bottom:8px;"">
-      {(messageIsHebrew
-          ? "קיבלת ברכה ממשחק ההזמנה"
-          : "You received a greeting from the invitation game")}
-    </h2>
-    <p><strong>👤 {(messageIsHebrew ? "שם" : "Name")}:</strong> {request.PlayerName}</p>
-    <p><strong>🕒 {(messageIsHebrew ? "תוצאה" : "Score")}:</strong> {request.Score}</p>
-    <p><strong>📨 {(messageIsHebrew ? "הודעה" : "Message")}:</strong><br/>{request.Message}</p>
-    <p><strong>📸 {(messageIsHebrew ? "תמונה" : "Image")}:</strong></p>
-    <img src=""data:image/png;base64,{request.ImageBase64}"" style=""max-width:100%;border-radius:8px;"" />
-  </body>
-</html>";
+                    <div style='font-family: Arial, sans-serif; font-size: 16px; color: #333; direction: {(isHebrew ? "rtl" : "ltr")}; text-align: {(isHebrew ? "right" : "left")};'>
+                        <h2 style='color: #0077cc;'>{(isHebrew ? "🎉 קיבלתם ברכה ממשחק האירוע!" : "🎉 You received a greeting from the invitation game!")}</h2>
+                        <p><strong>👤 {(isHebrew ? "שם" : "Name")}:</strong> {request.PlayerName}</p>
+                        <p><strong>🕒 {(isHebrew ? "תוצאה" : "Score")}:</strong> {request.Score}</p>
+                        <p><strong>📨 {(isHebrew ? "הודעה" : "Message")}:</strong><br>{request.Message}</p>
+                        <p><strong>📸 {(isHebrew ? "תמונה" : "Image")}:</strong></p>
+                        <img src=""data:image/png;base64,{request.ImageBase64}"" style='max-width:100%; border-radius:8px;' />
+                    </div>";
 
-                var mail = new MailMessage
+                MailMessage mail = new MailMessage
                 {
-                    From = new MailAddress(
-                        "jubilo.gamestudio@gmail.com",
-                        "Jubilo - Game Studio",
-                        Encoding.UTF8),
+                    From = new MailAddress("jubilo.gamestudio@gmail.com", "Jubilo - Game Studio", Encoding.UTF8),
                     Subject = subject,
                     SubjectEncoding = Encoding.UTF8,
                     BodyEncoding = Encoding.UTF8,
@@ -67,13 +50,11 @@ namespace EmailWebApp.Controllers
 
                 mail.To.Add(request.RecipientEmail);
 
-                using (var smtp = new SmtpClient("smtp.gmail.com", 587))
+                using (SmtpClient smtpClient = new SmtpClient("smtp.gmail.com", 587))
                 {
-                    smtp.Credentials = new NetworkCredential(
-                        "jubilo.gamestudio@gmail.com",
-                        "luyq azow wets wcdk");
-                    smtp.EnableSsl = true;
-                    smtp.Send(mail);
+                    smtpClient.Credentials = new NetworkCredential("jubilo.gamestudio@gmail.com", "luyq azow wets wcdk");
+                    smtpClient.EnableSsl = true;
+                    smtpClient.Send(mail);
                 }
 
                 return Ok("Email sent successfully.");
@@ -86,8 +67,7 @@ namespace EmailWebApp.Controllers
 
         private static bool IsHebrew(string text)
         {
-            return !string.IsNullOrEmpty(text)
-                && text.Any(c => c >= 0x0590 && c <= 0x05FF);
+            return !string.IsNullOrEmpty(text) && text.Any(c => c >= 0x0590 && c <= 0x05FF);
         }
     }
 
