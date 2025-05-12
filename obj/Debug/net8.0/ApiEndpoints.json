@@ -1,0 +1,18 @@
+[
+  {
+    "ContainingType": "EmailWebApp.Controllers.EmailController",
+    "Method": "SendEmail",
+    "RelativePath": "api/Email/send-email",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "EmailWebApp.Controllers.EmailRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  }
+]
