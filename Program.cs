@@ -1,9 +1,9 @@
 ﻿var builder = WebApplication.CreateBuilder(args);
 
-// 🔐 Add CORS with named policy
+// CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend", policy =>
+    options.AddPolicy("AllowGitHubPages", policy =>
     {
         policy.WithOrigins("https://maorbit.github.io")
               .AllowAnyHeader()
@@ -12,12 +12,14 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddControllers();
+
 var app = builder.Build();
 
-// 🛡 Use the named CORS policy BEFORE authorization
-app.UseCors("AllowFrontend");
+// Use CORS with named policy
+app.UseCors("AllowGitHubPages");
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+
 app.Run();
