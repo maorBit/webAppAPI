@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Mail;
-using System.Text;
-using System.IO;
 using System.Net.Mime;
+using System.Text;
 
 namespace EmailWebApp.Controllers
 {
@@ -30,19 +30,29 @@ namespace EmailWebApp.Controllers
                     ? $"ברכה מאת {request.PlayerName}"
                     : $"Greeting from {request.PlayerName}";
 
-                // Decode base64 image to byte[]
-                byte[] imageBytes = Convert.FromBase64String(request.ImageBase64);
+                string contentId = "SelfieImage";
+                string tempFilePath = Path.Combine(Path.GetTempPath(), $"selfie_{Guid.NewGuid()}.png");
+                System.IO.File.WriteAllBytes(tempFilePath, Convert.FromBase64String(request.ImageBase64));
 
-                // Create HTML body with CID reference to the image
+                LinkedResource inlineImage = new LinkedResource(tempFilePath, "image/png")
+                {
+                    ContentId = contentId,
+                    TransferEncoding = TransferEncoding.Base64,
+                    ContentType = new ContentType("image/png"),
+                    ContentLink = new Uri($"cid:{contentId}")
+                };
+
                 string htmlBody = $@"
-                    <div style='font-family: Arial, sans-serif; font-size: 16px; color: #333; direction: {(isHebrew ? "rtl" : "ltr")}; text-align: {(isHebrew ? "right" : "left")};'>
-                        <h2 style='color: #0077cc;'>{(isHebrew ? "🎉 קיבלתם ברכה ממשחק האירוע!" : "🎉 You received a greeting from the invitation game!")}</h2>
-                        <p><strong>👤 {(isHebrew ? "שם" : "Name")}:</strong> {request.PlayerName}</p>
-                        <p><strong>🕒 {(isHebrew ? "תוצאה" : "Score")}:</strong> {request.Score}</p>
-                        <p><strong>📨 {(isHebrew ? "הודעה" : "Message")}:</strong><br>{request.Message}</p>
-                        <p><strong>📸 {(isHebrew ? "תמונה" : "Image")}:</strong></p>
-                        <img src='cid:selfieImage' style='max-width:100%; border-radius:8px;' />
-                    </div>";
+                <body style='font-family:Arial,sans-serif; direction:{(isHebrew ? "rtl" : "ltr")}; text-align:{(isHebrew ? "right" : "left")}'>
+                    <h2 style='color:#4A90E2;'>🎉 {(isHebrew ? "קיבלתם ברכה ממשחק האירוע!" : "You received a greeting from the invitation game!")}</h2>
+                    <p><strong>{(isHebrew ? "מאת" : "From")}:</strong> {WebUtility.HtmlEncode(request.PlayerName)}</p>
+                    <p><strong>{(isHebrew ? "הודעה" : "Message")}:</strong> {WebUtility.HtmlEncode(request.Message)}</p>
+                    <p><strong>{(isHebrew ? "תוצאה" : "Score")}:</strong> {request.Score}</p>
+                    <img src='cid:{contentId}' alt='Selfie' style='margin-top:20px;max-width:100%;height:auto;border-radius:8px;' />
+                </body>";
+
+                AlternateView htmlView = AlternateView.CreateAlternateViewFromString(htmlBody, Encoding.UTF8, "text/html");
+                htmlView.LinkedResources.Add(inlineImage);
 
                 MailMessage mail = new MailMessage
                 {
@@ -54,18 +64,6 @@ namespace EmailWebApp.Controllers
                 };
 
                 mail.To.Add(request.RecipientEmail);
-
-                // Add image attachment with CID
-                MemoryStream imageStream = new MemoryStream(imageBytes);
-                Attachment inlineImage = new Attachment(imageStream, "selfie.png", "image/png");
-                inlineImage.ContentId = "selfieImage";
-                inlineImage.ContentDisposition.Inline = true;
-                inlineImage.ContentDisposition.DispositionType = DispositionTypeNames.Inline;
-                mail.Attachments.Add(inlineImage);
-
-                // AlternateView with HTML and linked resources
-                AlternateView htmlView = AlternateView.CreateAlternateViewFromString(htmlBody, Encoding.UTF8, "text/html");
-                htmlView.LinkedResources.Add(new LinkedResource(imageStream, "image/png") { ContentId = "selfieImage" });
                 mail.AlternateViews.Add(htmlView);
 
                 using (SmtpClient smtpClient = new SmtpClient("smtp.gmail.com", 587))
@@ -74,6 +72,8 @@ namespace EmailWebApp.Controllers
                     smtpClient.EnableSsl = true;
                     smtpClient.Send(mail);
                 }
+
+                System.IO.File.Delete(tempFilePath);
 
                 return Ok("Email sent successfully.");
             }
