@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("EmailWebApp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4aa02dd278f7455364b3558558033f8276e8a785")]
 [assembly: System.Reflection.AssemblyProductAttribute("EmailWebApp")]
 [assembly: System.Reflection.AssemblyTitleAttribute("EmailWebApp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

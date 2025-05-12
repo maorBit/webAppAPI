@@ -56,7 +56,15 @@ namespace EmailWebApp.Controllers
                 // Send the email
                 using (SmtpClient smtpClient = new SmtpClient("smtp.gmail.com", 587))
                 {
-                    smtpClient.Credentials = new NetworkCredential("jubilo.gamestudio@gmail.com", "luyq azow wets wcdk");
+                    string? emailUser = Environment.GetEnvironmentVariable("EMAIL_USER");
+                    string? emailPass = Environment.GetEnvironmentVariable("EMAIL_PASS");
+
+                    if (string.IsNullOrEmpty(emailUser) || string.IsNullOrEmpty(emailPass))
+                    {
+                        return StatusCode(500, "Email credentials are not configured properly.");
+                    }
+
+                    smtpClient.Credentials = new NetworkCredential(emailUser, emailPass);
                     smtpClient.EnableSsl = true;
                     smtpClient.Send(mail);
                 }
