@@ -6,8 +6,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontendOrigins", policy =>
     {
         policy.WithOrigins(
-            "https://maorbit.github.io",
-            "https://jubilo-wedding.netlify.app"
+            "https://maorbit.github.io"
         )
         .AllowAnyHeader()
         .AllowAnyMethod();
