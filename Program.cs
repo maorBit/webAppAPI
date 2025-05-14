@@ -7,14 +7,17 @@ using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1) CORS — allow your WebGL origin
+// 1) CORS — allow your WebGL origin (Netlify) and, if needed, localhost for testing
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontendOrigins", policy =>
     {
-        policy.WithOrigins("https://maorbit.github.io")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        policy.WithOrigins(
+                "https://jubilo-wedding.netlify.app",
+                "http://localhost:8080"        // optional: your local dev URL
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
     });
 });
 
@@ -24,7 +27,6 @@ builder.Services.AddControllers();
 // 3) SendGrid client — read from appsettings or ENV
 builder.Services.AddSingleton<ISendGridClient>(sp =>
 {
-    // prefer appsettings (user-secrets/local dev), else ENV
     var cfgKey = builder.Configuration["SendGrid:ApiKey"];
     var envKey = Environment.GetEnvironmentVariable("SENDGRID_API_KEY");
     var apiKey = !string.IsNullOrWhiteSpace(cfgKey) ? cfgKey : envKey;
@@ -45,7 +47,7 @@ app.UseCors("AllowFrontendOrigins");
 
 app.UseHttpsRedirection();
 
-// (Optional) If you later add authentication/authorization:
+// If you add authentication later:
 // app.UseAuthentication();
 // app.UseAuthorization();
 
