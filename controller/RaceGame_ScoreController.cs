@@ -1,5 +1,4 @@
-﻿using EmailWebApp.models;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System.Text;
 using System.Threading.Tasks;
@@ -7,7 +6,7 @@ using System.Threading.Tasks;
 namespace EmailWebApp.controller
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/score")]
     public class RaceGame_ScoreController : ControllerBase
     {
         [HttpPost("submit-score")]
