@@ -44,7 +44,7 @@ namespace EmailWebApp.controller
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
             // ✅ 6. Submit to LootLocker
-            var response = await httpClient.PostAsync("https://api.lootlocker.io/game/leaderboards/submit-score", content);
+            var response = await httpClient.PostAsync("https://api.lootlocker.io/admin/leaderboards/submit", content);
             var lootLockerResponse = await response.Content.ReadAsStringAsync();
 
             Console.WriteLine($"📬 LootLocker Response: {response.StatusCode}");
