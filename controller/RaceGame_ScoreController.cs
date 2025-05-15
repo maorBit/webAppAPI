@@ -15,11 +15,17 @@ namespace EmailWebApp.controller
             if (data.Time < 1 || data.Time > 600)
                 return BadRequest("Invalid race time");
 
+
+            if (string.IsNullOrWhiteSpace(data.SessionToken))
+                return BadRequest("Missing session token");
+
             int scoreToSubmit = (int)(data.Time * 1000);
+
 
             var httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Add("x-api-key", "dev_be8cdc0c9a9943ec80f9e99bfb1be7a5");
             httpClient.DefaultRequestHeaders.Add("x-lootlocker-game-domain", "dev");
+            httpClient.DefaultRequestHeaders.Add("x-session-token", data.SessionToken);   // ← this line
 
             var payload = new
             {

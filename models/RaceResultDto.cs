@@ -8,6 +8,10 @@ public class RaceResultDto
     [JsonProperty("playerName")]
     public string? PlayerName { get; set; }
 
+    [JsonProperty("sessionToken")]
+    public string? SessionToken { get; set; }    // ← new
+
+
     [JsonProperty("time")]
     public float Time { get; set; }
 }
