@@ -2,7 +2,12 @@
 
 public class RaceResultDto
 {
+    [JsonProperty("playerId")]
     public string PlayerId { get; set; }
+
+    [JsonProperty("playerName")]
     public string PlayerName { get; set; }
+
+    [JsonProperty("time")]
     public float Time { get; set; }
 }
