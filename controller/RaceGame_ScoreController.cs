@@ -21,7 +21,7 @@ namespace EmailWebApp.controller
             int scoreToSubmit = (int)(data.Time * 1000); // e.g., 42.6s → 42600
 
             var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Add("dev_27dfc9190f6f486f9657edfaec906268", "dev_be8cdc0c9a9943ec80f9e99bfb1be7a5");
+            httpClient.DefaultRequestHeaders.Add("x-api-key", "dev_be8cdc0c9a9943ec80f9e99bfb1be7a5");
 
             var payload = new
             {
