@@ -1,9 +1,13 @@
-﻿namespace EmailWebApp.models
+﻿using Newtonsoft.Json;
+
+public class RaceResultDto
 {
-    public class RaceResultDto
-    {
-        public string PlayerId { get; set; }
-        public string PlayerName { get; set; }
-        public float Time { get; set; }
-    }
+    [JsonProperty("playerId")]
+    public string PlayerId { get; set; }
+
+    [JsonProperty("playerName")]
+    public string PlayerName { get; set; }
+
+    [JsonProperty("time")]
+    public float Time { get; set; }
 }
