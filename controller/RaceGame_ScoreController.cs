@@ -5,8 +5,9 @@ using System.Text;
 
 namespace EmailWebApp.controller
 {
+
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/score")]
     public class RaceGame_ScoreController : ControllerBase
     {
         [HttpPost("submit-score")]
