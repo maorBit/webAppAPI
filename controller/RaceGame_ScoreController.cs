@@ -19,7 +19,7 @@ namespace EmailWebApp.controller
             if (string.IsNullOrWhiteSpace(data.SessionToken))
                 return BadRequest("Missing session token");
 
-            int scoreToSubmit = (int)(data.Time * 1000);
+            int scoreToSubmit = (int)(data.Time);
 
 
             var httpClient = new HttpClient();
