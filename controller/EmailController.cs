@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using SendGrid;
 using SendGrid.Helpers.Mail;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -28,19 +29,19 @@ namespace EmailWebApp.Controllers
                 || string.IsNullOrWhiteSpace(request.Message)
                 || string.IsNullOrWhiteSpace(request.ImageBase64))
             {
-                return BadRequest("Invalid request data.");
+                return BadRequest("❌ נתוני הבקשה אינם תקינים (RecipientEmail, Message, ImageBase64)");
             }
 
-            // Detect Hebrew to set subject/body direction
-            bool isHebrew = !string.IsNullOrEmpty(request.Message)
-                         && request.Message.Any(c => c >= 0x0590 && c <= 0x05FF);
+            try
+            {
+                // Detect Hebrew
+                bool isHebrew = request.Message.Any(c => c >= 0x0590 && c <= 0x05FF);
 
-            string subject = isHebrew
-                ? $"ברכה מאת {request.PlayerName}"
-                : $"Greeting from {request.PlayerName}";
+                string subject = isHebrew
+                    ? $"ברכה מאת {request.PlayerName}"
+                    : $"Greeting from {request.PlayerName}";
 
-            // Build HTML with inline image reference
-            string htmlContent = $@"
+                string htmlContent = $@"
 <html>
   <body style='font-family:Arial,sans-serif; direction:{(isHebrew ? "rtl" : "ltr")}; text-align:{(isHebrew ? "right" : "left")};'>
     <h2>🎉 {(isHebrew ? "קיבלתם ברכה ממשחק האירוע!" : "You received a greeting from the invitation game!")}</h2>
@@ -51,36 +52,53 @@ namespace EmailWebApp.Controllers
   </body>
 </html>";
 
-            // Prepare SendGrid message
-            var from = new EmailAddress(
-                _config["SendGrid:SenderEmail"],
-                _config["SendGrid:SenderName"]
-            );
-            var to = new EmailAddress(request.RecipientEmail);
-            var msg = MailHelper.CreateSingleEmail(
-                from,
-                to,
-                subject,
-                plainTextContent: request.Message,
-                htmlContent: htmlContent
-            );
+                var from = new EmailAddress(
+                    _config["SendGrid:SenderEmail"],
+                    _config["SendGrid:SenderName"]
+                );
+                var to = new EmailAddress(request.RecipientEmail);
 
-            // Attach inline image
-            msg.AddAttachment(
-                filename: "selfie.png",
-                base64Content: request.ImageBase64,
-                type: "image/png",
-                disposition: "inline",
-                content_id: "selfie"
-            );
+                var msg = MailHelper.CreateSingleEmail(
+                    from,
+                    to,
+                    subject,
+                    plainTextContent: request.Message,
+                    htmlContent: htmlContent
+                );
 
-            // Send and handle response
-            var response = await _sendGrid.SendEmailAsync(msg);
-            if (response.IsSuccessStatusCode)
-                return Ok("Email sent via SendGrid!");
+                // Inline image
+                msg.AddAttachment(
+                    filename: "selfie.png",
+                    base64Content: request.ImageBase64,
+                    type: "image/png",
+                    disposition: "inline",
+                    content_id: "selfie"
+                );
 
-            var errorBody = await response.Body.ReadAsStringAsync();
-            return StatusCode((int)response.StatusCode, $"SendGrid error: {errorBody}");
+                var response = await _sendGrid.SendEmailAsync(msg);
+
+                if (response.IsSuccessStatusCode)
+                    return Ok(new { success = true, message = "Email sent via SendGrid!" });
+
+                var errorBody = await response.Body.ReadAsStringAsync();
+                Console.WriteLine($"❌ SendGrid error: {errorBody}");
+                return StatusCode((int)response.StatusCode, new
+                {
+                    success = false,
+                    error = "SendGrid failed to send the email.",
+                    detail = errorBody
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"🔥 Internal error sending email: {ex.Message}");
+                return StatusCode(500, new
+                {
+                    success = false,
+                    error = "Unexpected server error.",
+                    detail = ex.Message
+                });
+            }
         }
     }
 
