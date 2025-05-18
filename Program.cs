@@ -1,9 +1,10 @@
-﻿using SendGrid;
+﻿// Program.cs
+using SendGrid;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.OpenApi.Models;    // ← needed for OpenApiInfo
+using Microsoft.OpenApi.Models;
 using System;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,7 +20,6 @@ builder.Services.AddCors(options =>
             )
             .AllowAnyHeader()
             .AllowAnyMethod();
-        // .AllowCredentials(); // only if you need cookies/auth headers
     });
 });
 
@@ -32,9 +32,8 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "Jubilo Email API",
+        Title = "Jubilo Email & Score API",
         Version = "v1",
-        Description = "SendGrid-powered email endpoints"
     });
 });
 
@@ -45,41 +44,45 @@ builder.Services.AddSingleton<ISendGridClient>(sp =>
     var cfgKey = config["SendGrid:ApiKey"];
     var envKey = Environment.GetEnvironmentVariable("SENDGRID_API_KEY");
     var apiKey = !string.IsNullOrWhiteSpace(cfgKey) ? cfgKey : envKey;
-
     if (string.IsNullOrWhiteSpace(apiKey))
         throw new InvalidOperationException(
             "SendGrid API key not configured. " +
             "Define SendGrid:ApiKey in appsettings or set the SENDGRID_API_KEY env var."
         );
-
     return new SendGridClient(apiKey);
 });
 
+// 5) LootLocker HttpClient registration
+builder.Services.AddHttpClient("LootLocker", client =>
+{
+    client.BaseAddress = new Uri("https://api.lootlocker.io/");
+    client.DefaultRequestHeaders.Add("x-api-key", "dev_be8cdc0c9a9943ec80f9e99bfb1be7a5");
+    client.DefaultRequestHeaders.Add("x-lootlocker-game-domain", "dev");
+})
+// Optional: tune handler lifetime or add retry policies here
+.SetHandlerLifetime(TimeSpan.FromMinutes(5));
+
 var app = builder.Build();
 
-// 5) Dev-only middleware
+// 6) Dev-only middleware
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Jubilo Email API v1");
-        c.RoutePrefix = string.Empty; // swagger at root (https://.../)
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Jubilo Email & Score API v1");
+        c.RoutePrefix = string.Empty;
     });
 }
 
-// 6) Redirect HTTP→HTTPS
+// 7) Redirect HTTP→HTTPS
 app.UseHttpsRedirection();
 
-// 7) CORS must come before routing/controllers
+// 8) Apply CORS
 app.UseCors("AllowFrontendOrigins");
 
-// 8) (Optional) Authn / Authz
-// app.UseAuthentication();
-// app.UseAuthorization();
-
-// 9) Map your API controllers
+// 9) Map controllers
 app.MapControllers();
 
 app.Run();
