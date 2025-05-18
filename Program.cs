@@ -35,13 +35,25 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// ✅ 3) SendGrid client registration
+// ✅ 3) Register SendGrid client with fallback + debug
 builder.Services.AddSingleton<ISendGridClient>(sp =>
 {
     var config = sp.GetRequiredService<IConfiguration>();
-    var apiKey = config["SendGrid:ApiKey"]
-              ?? Environment.GetEnvironmentVariable("SENDGRID_API_KEY")
-              ?? throw new InvalidOperationException("Missing SendGrid API key.");
+    var apiKey = config["SendGrid:ApiKey"];
+
+    if (string.IsNullOrWhiteSpace(apiKey))
+    {
+        Console.WriteLine("⚠️ config['SendGrid:ApiKey'] is empty. Trying environment variable...");
+        apiKey = Environment.GetEnvironmentVariable("SENDGRID_API_KEY");
+    }
+
+    if (string.IsNullOrWhiteSpace(apiKey))
+    {
+        Console.WriteLine("❌ Failed to load SendGrid API key. Check Render environment variables.");
+        throw new InvalidOperationException("Missing SendGrid API key.");
+    }
+
+    Console.WriteLine($"✅ SendGrid API key loaded. Length: {apiKey.Length}");
     return new SendGridClient(apiKey);
 });
 
@@ -56,7 +68,7 @@ builder.Services.AddHttpClient("LootLocker", client =>
 
 var app = builder.Build();
 
-// ✅ 5) Log incoming origin for debug
+// ✅ 5) Log origin for debug (optional)
 app.Use(async (context, next) =>
 {
     var origin = context.Request.Headers["Origin"].ToString();
@@ -69,7 +81,7 @@ app.Use(async (context, next) =>
     }
 });
 
-// ✅ 6) Dev-only middleware
+// ✅ 6) Swagger UI for dev only
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -81,17 +93,14 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// ✅ 7) Always redirect HTTP→HTTPS
+// ✅ 7) HTTPS redirect
 app.UseHttpsRedirection();
 
-// ✅ 8) Routing and CORS (order matters!)
+// ✅ 8) Enable routing + CORS
 app.UseRouting();
-app.UseCors(); // apply default policy
+app.UseCors(); // Applies default policy
 
-// ✅ 9) Authorization if needed (uncomment if using [Authorize])
-// app.UseAuthorization();
-
-// ✅ 10) Map controller endpoints
+// ✅ 9) Map endpoints
 app.MapControllers();
 
 app.Run();
